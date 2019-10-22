@@ -1,59 +1,59 @@
 'use strict';
- 
+
 const functions = require('firebase-functions');
 const {WebhookClient} = require('dialogflow-fulfillment');
 const {Card, Suggestion} = require('dialogflow-fulfillment');
 const axios = require('axios');
- 
+
 process.env.DEBUG = 'dialogflow:debug'; // enables lib debugging statements
- 
+
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, response) => {
   const agent = new WebhookClient({ request, response });
   console.log('Dialogflow Request headers: ' + JSON.stringify(request.headers));
   console.log('Dialogflow Request body: ' + JSON.stringify(request.body));
- 
+  
   function welcome(agent) {
     agent.add(`Welcome! I like trains.`);
     agent.add(`Choo choo mother lover.`);
   }
- 
+  
   function fallback(agent) {
     agent.add(`I didn't understand`);
     agent.add(`I'm sorry, can you try again?`);
-}
+  }
   
 
-function trainTime(agent) {
-  var geo_city = agent.parameters["geo-city"];
-  if (geo_city) {
-    let d = new Date();
-    let year = d.getFullYear();
-    let month = d.getMonth() + 1;
-    let day = d.getDate();
-    let hour = d.getHours() - 4;
-    let minute = d.getMinutes();
-    var url = 'https://traintime.lirr.org/api/TrainTime?month=' + month + '&day=' + day + '&year=' + year + '&hour=' + hour + '&minute=' + minute + '&datoggle=d&endsta=NYK&startsta=LYN&mymta=1';
-    console.log(url);
-    return axios.get(url).then(res => {
-      var depart_time = '';
-      for (let i = 0; i < res.data.TRIPS.length; i++) {
-        if (res.data.TRIPS[i].LEGS[0].STATUS != 'Left Station') {
-          depart_time = res.data.TRIPS[i].LEGS[0].STOPS[0].TIME;
-          break;
+  function trainTime(agent) {
+    var geo_city = agent.parameters["geo-city"];
+    if (geo_city) {
+      let d = new Date();
+      let year = d.getFullYear();
+      let month = d.getMonth() + 1;
+      let day = d.getDate();
+      let hour = d.getHours() - 4;
+      let minute = d.getMinutes();
+      var url = 'https://traintime.lirr.org/api/TrainTime?month=' + month + '&day=' + day + '&year=' + year + '&hour=' + hour + '&minute=' + minute + '&datoggle=d&endsta=NYK&startsta=LYN&mymta=1';
+      console.log(url);
+      return axios.get(url).then(res => {
+        var depart_time = '';
+        for (let i = 0; i < res.data.TRIPS.length; i++) {
+          if (res.data.TRIPS[i].LEGS[0].STATUS != 'Left Station') {
+            depart_time = res.data.TRIPS[i].LEGS[0].STOPS[0].TIME;
+            break;
+          }
         }
-      }
-      var bot_response = "The next train from " + geo_city + " to Penn leaves at " + depart_time + ".";
-      agent.add(bot_response);
-    }).catch(error => {
-      console.log(error);
-      agent.add("Uh-oh, there's an error in my code. It's not you, it's me.");
-    });
-  } else {
-    agent.add("From what station?");
+        var bot_response = "The next train from " + geo_city + " to Penn leaves at " + depart_time + ".";
+        agent.add(bot_response);
+      }).catch(error => {
+        console.log(error);
+        agent.add("Uh-oh, there's an error in my code. It's not you, it's me.");
+      });
+    } else {
+      agent.add("From what station?");
+    }
   }
-}
 
- 
+  
   // // Uncomment and edit to make your own intent handler
   // // uncomment `intentMap.set('your intent name here', yourFunctionHandler);`
   // // below to get this function to be run when a Dialogflow intent is matched
