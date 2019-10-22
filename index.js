@@ -5,6 +5,7 @@ const {WebhookClient} = require('dialogflow-fulfillment');
 const {Card, Suggestion} = require('dialogflow-fulfillment');
 const axios = require('axios');
 var GEO_CITY = "geo-city";
+var STATION = "station";
 
 process.env.DEBUG = 'dialogflow:debug'; // enables lib debugging statements
 
@@ -59,7 +60,10 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
 
   function trainTime(agent) {
     var geo_city = agent.parameters[GEO_CITY];
-    if (geo_city) {
+    var station = agent.parameters[STATION];
+    if (geo_city || station) {
+      let stop = geo_city || station;
+          
       let d = new Date();
       let year = d.getFullYear();
       let month = d.getMonth() + 1;
@@ -67,7 +71,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
       let hour = d.getHours() - 4;
       let minute = d.getMinutes();
       
-      let city_code = getCityCode(geo_city);
+      let city_code = getCityCode(stop);
       let url = 'https://traintime.lirr.org/api/TrainTime?month=' + month + '&day=' + day + '&year=' + year + '&hour=' + hour + '&minute=' + minute + '&datoggle=d&endsta=NYK&startsta=' + city_code + '&mymta=1';
       console.log(url);
       
@@ -79,7 +83,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
             break;
           }
         }
-        var bot_response = "The next train from " + geo_city + " to Penn leaves at " + depart_time + ".";
+        var bot_response = "The next train from " + stop + " to Penn leaves at " + depart_time + ".";
         agent.add(bot_response);
       }).catch(error => {
         console.log(error);
